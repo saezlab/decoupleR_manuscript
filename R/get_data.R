@@ -46,7 +46,7 @@ get_regnetwork <- function(confs=c('High', 'Medium', 'Low')){
   df <- filter_by_Lambert(df)
 
   # Write
-  write.csv2(df, file.path('data/', 'regnetwork.csv'), row.names=F)
+  saveRDS(df, file.path('data/', 'regnetwork.rds'))
 
   # Remove tmp files
   for (conf in confs) {
@@ -109,7 +109,7 @@ get_chea3 <- function(){
   df <- filter_by_Lambert(df)
 
   # Save
-  write.csv2(df, file.path('data/', 'chea3.csv'), row.names=F)
+  saveRDS(df, file.path('data/', 'chea3.rds'))
 
   # Remove tmp files
   for (name in names) {
@@ -126,7 +126,7 @@ get_dorothea <- function(){
   df <- filter_by_Lambert(dorothea_hs)
 
   # Save
-  write.csv2(dorothea_hs, file.path('data/', 'dorothea.csv'), row.names=F)
+  saveRDS(dorothea_hs, file.path('data/', 'dorothea.rds'))
 }
 
 
