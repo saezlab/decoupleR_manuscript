@@ -15,11 +15,13 @@ get_Lambert <- function(){
   write.csv2(df, file.path('data/', 'lambert.csv'), row.names=F)
 }
 
+
 filter_by_Lambert <- function(df, fname=file.path('data/', 'lambert.csv')){
   # Read TFs
   lambert <- read.csv2(fname)$Name
   dplyr::filter(df, tf %in% lambert)
 }
+
 
 get_regnetwork <- function(confs=c('High', 'Medium', 'Low')){
   # Download Regnetwork
@@ -41,9 +43,14 @@ get_regnetwork <- function(confs=c('High', 'Medium', 'Low')){
   # Format
   df <- do.call(rbind, df)[,c('regulator_symbol','target_symbol','confidence')]
   colnames(df) <- c('tf', 'target', 'confidence')
+  df['mor'] <- 1
+  df['likelihood'] <- 1
 
   # Filter by Lambert
   df <- filter_by_Lambert(df)
+
+  # Remove duplicates
+  df <- df %>% distinct(tf, target, confidence, .keep_all = TRUE)
 
   # Write
   saveRDS(df, file.path('data/', 'regnetwork.rds'))
@@ -53,6 +60,23 @@ get_regnetwork <- function(confs=c('High', 'Medium', 'Low')){
     fname <- file.path('data/', stringr::str_glue('regnetwork_{conf}.csv'))
     file.remove(fname)
   }
+}
+
+
+unify_chea3_names <- function(tf_list) {
+  # Insert '-' for NKX entries
+  nkx_last_number <- tf_list %>% str_subset("NKX") %>% str_sub(-1)
+  nkx_rest <- tf_list %>% str_subset("NKX") %>% str_sub(1,-2)
+  nkx_corrected <- paste(nkx_rest, nkx_last_number, sep="-")
+  # Correct NKX with '-' and mutate aliases
+  tf_list %>%
+    str_subset("NKX.*", negate = TRUE) %>%
+    append(nkx_corrected) %>%
+    str_replace("ZNF875", "HKR1") %>%
+    str_replace("TBXT", "T") %>%
+    str_replace("CBLL2","ZNF645") %>%
+    str_replace("ZNF788P", "ZNF788") %>%
+    str_replace("ZUP1", "ZUFSP")
 }
 
 
@@ -104,9 +128,17 @@ get_chea3 <- function(){
 
   # Format
   df <- do.call(rbind, df)
+  df['mor'] <- 1
+  df['likelihood'] <- 1
+
+  # Change mislabeled TFs
+  df[['tf']] <- unify_chea3_names(df[['tf']])
 
   # Filter by Lambert
   df <- filter_by_Lambert(df)
+
+  # Remove duplicates
+  df <- df %>% distinct(tf, target, confidence, .keep_all = TRUE)
 
   # Save
   saveRDS(df, file.path('data/', 'chea3.rds'))
@@ -118,12 +150,20 @@ get_chea3 <- function(){
   }
 }
 
+
 get_dorothea <- function(){
   # Get dorothea
   data(dorothea_hs, package = "dorothea")
 
   # Filter by Lambert
-  df <- filter_by_Lambert(dorothea_hs)
+  dorothea_hs <- filter_by_Lambert(dorothea_hs)
+
+  # Remove duplicates
+  dorothea_hs <- dorothea_hs %>% distinct(tf, target, confidence,
+                                          .keep_all = TRUE)
+
+  # Add likelihood
+  dorothea_hs['likelihood'] <- 1
 
   # Save
   saveRDS(dorothea_hs, file.path('data/', 'dorothea.rds'))
@@ -137,5 +177,6 @@ get_data <- function(){
   get_chea3()
   get_regnetwork()
 }
+
 
 
