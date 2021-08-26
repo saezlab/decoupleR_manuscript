@@ -1,6 +1,7 @@
 library(decoupleRBench)
 library(dplyr)
 library(purrr)
+library(tidyverse)
 
 # Paths to benchmark data, benchmark metadata and kinase substrate network
 # Benchmark data contains 82 perturbation experiments covering 27 unique kinases
