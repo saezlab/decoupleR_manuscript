@@ -49,8 +49,24 @@ get_regnetwork <- function(confs=c('High', 'Medium', 'Low')){
   # Filter by Lambert
   df <- filter_by_Lambert(df)
 
-  # Remove duplicates
-  df <- df %>% distinct(tf, target, confidence, .keep_all = TRUE)
+  # Remove miRNA targets
+  df <- dplyr::filter(df, !grepl('hsa-', target))
+  df <- dplyr::filter(df, !grepl('MIR', target))
+
+  # Organize into layers:
+  # High = High
+  # Medium = High + Medium
+  # Low = High + Medium + Low
+  high_df <- dplyr::filter(df, confidence == 'High')
+
+  medium_df <- dplyr::bind_rows(high_df, dplyr::filter(df, confidence == 'Medium'))
+  medium_df$confidence <- 'Medium'
+
+  low_df <- dplyr::bind_rows(medium_df, dplyr::filter(df, confidence == 'Low'))
+  low_df$confidence <- 'Low'
+
+  df <- dplyr::bind_rows(high_df, medium_df, low_df)
+  df <- dplyr::distinct(df, tf, target, confidence, .keep_all = TRUE)
 
   # Write
   saveRDS(df, file.path('data/', 'regnetwork.rds'))

@@ -32,10 +32,10 @@ design <- tibble(
   target_col = c("target",'target'),#,"target","target"),
   filter_col = c("confidence",'confidence'),#,"confidence","confidence"),
   filter_crit = list(c("A"),c("A", 'B', 'C')),#,c("A", 'B', 'C')),
-  noise_crit = list(NA,
-                    NA
-                    #list(mode='add', perc=0.5, seed=1996),
-                    #list(mode='del', perc=0.5, seed=1996)
+  noise_crit = list(#NA,
+                    #NA
+                    list(mode='add', perc=0.5, seed=1996),
+                    list(mode='del', perc=0.5, seed=1996)
                     )
 )
 
