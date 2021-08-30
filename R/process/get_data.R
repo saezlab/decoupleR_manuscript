@@ -239,10 +239,12 @@ get_php_data <- function(path){
   benchmark_data <- tibble::column_to_rownames(benchmark_data, var = "ID")
   benchmark_data[is.na(benchmark_data)] <- 0
 
-  # Filter out benchmamrk kinases not part of the KSN
+  # Filter out benchmamrk kinases not part of the KSN or that have target > 1
   metaData <- readxl::read_excel(meta_fname, sheet = "KinaseConditionPairs")
   KSN <- readRDS(file.path(path, 'KSN.rds'))
-  benchmarkPKN <- unique(metaData$Condition[metaData$Kinase %in% KSN$source])
+  tble <- table(metaData$Condition)
+  ids <- names(tble)[tble == 1]
+  benchmarkPKN <- metaData$Condition[(metaData$Kinase %in% KSN$source) & (metaData$Condition %in% ids)]
   benchmark_data <- benchmark_data[,colnames(benchmark_data) %in% benchmarkPKN]
 
   # Format meta
