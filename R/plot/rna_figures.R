@@ -6,11 +6,19 @@ library(tidyr)
 library(purrr)
 library(ggrepel)
 library(patchwork)
+library(ggplotify)
+
+# Create dir
+path_figs <- file.path('figures')
+dir.create(path_figs, showWarnings = F, recursive = T)
 
 # Read
 rna_fname <- file.path('data', 'prc', 'rna_result.rds')
 rna_result <- readRDS(rna_fname)
 
+###
+# Similarties between activities
+###
 # Correlation
 df <- rna_result %>%
   dplyr::select(set_name, filter_crit, activity) %>%
@@ -18,11 +26,9 @@ df <- rna_result %>%
   select(set_name, filter_crit, id, tf, statistic, score) %>%
   pivot_wider(names_from=statistic, values_from=score) %>%
   select(-set_name, -filter_crit, -id, -tf)
-
 corr_matrix <- matrix(0, ncol(df), ncol(df))
 colnames(corr_matrix) <- colnames(df)
 rownames(corr_matrix) <- colnames(df)
-
 for (name_a in colnames(df)) {
   for (name_b in colnames(df)) {
     corr_matrix[name_a,name_b] <- cor(abs(df[[name_a]]), abs(df[[name_b]]))
@@ -40,7 +46,8 @@ cor_heat <- pheatmap(corr_matrix, color = colorRampPalette((RColorBrewer::brewer
                      display_numbers=F, cluster_rows = F, number_color='black', border_color=NA,
                      cluster_cols = T, na_col=NA, cellwidth = celldim, cellheight = celldim,
                      legend_breaks = c(0, 0.25, 0.50, 0.75, 1.0), legend=T,
-                     show_rownames = T, show_colnames = T)
+                     show_rownames = T, show_colnames = T, main='Pearson correlation',
+                     width = 4, height=4)
 
 # Jaccard
 stat_acts <- rna_result %>%
@@ -60,9 +67,9 @@ stat_acts <- stat_acts %>%
   pivot_wider(id_cols = id, names_from = statistic, values_from = data) %>%
   column_to_rownames('id')
 
-jacc_matrix <- matrix(0, ncol(df), ncol(df))
-colnames(jacc_matrix) <- colnames(df)
-rownames(jacc_matrix) <- colnames(df)
+jacc_matrix <- matrix(0, ncol(stat_acts), ncol(stat_acts))
+colnames(jacc_matrix) <- colnames(stat_acts)
+rownames(jacc_matrix) <- colnames(stat_acts)
 
 jacc_idx <- function(a,b){
   n_inter <- length(intersect(a,b))
@@ -77,22 +84,24 @@ for (name_a in colnames(stat_acts)) {
       tfs_b <- stat_acts[sample,name_b][[1]]$tf
       jacc_idx(tfs_a, tfs_b)
     })
-    jacc_matrix[name_a,name_b] <- mean(jacs)
+    jacc_matrix[name_a,name_b] <- round(mean(jacs), 4)
   }
 }
 
 # Get order of clustered methods
 jac_heat <- pheatmap(jacc_matrix, cluster_rows = T,
-                     cluster_cols = T)
+                     cluster_cols = T, display_numbers = T)
 idxs <- jac_heat$tree_row$order
 jacc_matrix <- jacc_matrix[idxs,idxs]
 jac_heat <- pheatmap(jacc_matrix, color = colorRampPalette((RColorBrewer::brewer.pal(n = 7, name ="Reds")))(100),
                      display_numbers=F, cluster_rows = F, number_color='black', border_color=NA,
                      cluster_cols = T, na_col=NA, cellwidth = celldim, cellheight = celldim,
                      legend_breaks = c(0, 0.25, 0.50, 0.75, 1.0), legend=T,
-                     show_rownames = T, show_colnames = T)
+                     show_rownames = T, show_colnames = T, main='Jaccard index',
+                     width = 4, height=4)
 
 
+# Relationship between corr and jaccard
 stats <- rownames(corr_matrix)
 corr_matrix <- corr_matrix[stats,stats]
 jacc_matrix <- jacc_matrix[stats,stats]
@@ -100,7 +109,6 @@ corr_jacc <- tibble(
   corr = corr_matrix[upper.tri(corr_matrix)],
   jacc = jacc_matrix[upper.tri(jacc_matrix)]
 )
-
 corr_jacc_p <- ggplot(corr_jacc, aes(x=corr,
                                      y=jacc)) +
   theme_classic() +
@@ -108,26 +116,16 @@ corr_jacc_p <- ggplot(corr_jacc, aes(x=corr,
   xlab('Correlations') +
   ylab('Jaccard Indexes') + theme(aspect.ratio=1)
 
-path_figs <- file.path('figures')
-dir.create(path_figs, showWarnings = F, recursive = T)
+# Write
 pdf(file = file.path(path_figs, 'rna_corr_jacc.pdf'),
-    width = 4, # The width of the plot in inches
-    height = 4) # The height of the plot in inches
-corr_jacc_p
-dev.off()
-pdf(file = file.path(path_figs, 'rna_corr.pdf'),
-    width = 4, # The width of the plot in inches
-    height = 4) # The height of the plot in inches
-plot.new()
-cor_heat
-dev.off()
-pdf(file = file.path(path_figs, 'rna_jacc.pdf'),
-    width = 4, # The width of the plot in inches
-    height = 4) # The height of the plot in inches
-plot.new()
-jac_heat
+    width = 12, # The width of the plot in inches
+    height = 4.5) # The height of the plot in inches
+as.ggplot(cor_heat) + as.ggplot(jac_heat) + corr_jacc_p
 dev.off()
 
+###
+# Performance
+###
 # AUROC
 aucs <- rna_result %>%
   select(statistic, roc) %>%
@@ -138,18 +136,6 @@ aucs <- rna_result %>%
       pull(raw_auc)
   })) %>%
   unnest(cols = c(roc))
-
-roc_p <- ggplot(aucs,
-                aes(x=forcats::fct_reorder(statistic, roc, .fun = median, .desc =TRUE),
-                    y=roc)
-) +
-  theme_classic() +
-  geom_boxplot() +
-  ylim(0.5,1) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  xlab('Methods') +
-  ylab('AUROC') +
-  theme(aspect.ratio=1)
 
 # AUPR
 prcs <- rna_result %>%
@@ -162,6 +148,24 @@ prcs <- rna_result %>%
   })) %>%
   unnest(cols = c(prc))
 
+# Both
+both <- aucs %>%
+  left_join(prcs) %>%
+  group_by(statistic) %>%
+  summarise(roc = median(roc), prc = median(prc), .groups='drop')
+
+# Plots
+roc_p <- ggplot(aucs,
+                aes(x=forcats::fct_reorder(statistic, roc, .fun = median, .desc =TRUE),
+                    y=roc)
+) +
+  theme_classic() +
+  geom_boxplot() +
+  ylim(0.5,1) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  xlab('Methods') +
+  ylab('AUROC')
+
 prc_p <- ggplot(prcs, aes(x=forcats::fct_reorder(statistic, prc, .fun = median, .desc =TRUE),
                           y=prc)) +
   theme_classic() +
@@ -169,35 +173,18 @@ prc_p <- ggplot(prcs, aes(x=forcats::fct_reorder(statistic, prc, .fun = median, 
   ylim(0.5,1) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   xlab('Methods') +
-  ylab('AUPRC') + theme(aspect.ratio=1)
-
-pdf(file = file.path(path_figs, 'rna_roc_boxplots.pdf'),
-    width = 4, # The width of the plot in inches
-    height = 4) # The height of the plot in inches
-roc_p
-dev.off()
-pdf(file = file.path(path_figs, 'rna_prc_boxplots.pdf'),
-    width = 4, # The width of the plot in inches
-    height = 4) # The height of the plot in inches
-prc_p
-dev.off()
-
-# Both
-both <- aucs %>%
-  left_join(prcs) %>%
-  group_by(statistic) %>%
-  summarise(roc = median(roc), prc = median(prc), .groups='drop')
+  ylab('AUPRC')
 
 both_p <- ggplot(both, aes(x=roc, y=prc, label=statistic)) +
   theme_classic() +
   geom_point() +
-  geom_text_repel(size=2) +
+  geom_text_repel() +
   xlab('AUROC') +
-  ylab('AUPRC') +
-  theme(aspect.ratio=1)
+  ylab('AUPRC')
 
+# Write
 pdf(file = file.path(path_figs, 'rna_roc_prc.pdf'),
-    width = 6, # The width of the plot in inches
-    height = 6) # The height of the plot in inches
-both_p
+    width = (2*4), # The width of the plot in inches
+    height = (3*4)) # The height of the plot in inches
+(roc_p + prc_p) / both_p
 dev.off()

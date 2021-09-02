@@ -97,8 +97,7 @@ jac_heat <- pheatmap(jacc_matrix, cluster_rows = T,
                      cluster_cols = T, display_numbers = T)
 idxs <- jac_heat$tree_row$order
 jacc_matrix <- jacc_matrix[idxs,idxs]
-jac_heat <-
-pheatmap(jacc_matrix, color = colorRampPalette((RColorBrewer::brewer.pal(n = 7, name ="Reds")))(100),
+jac_heat <- pheatmap(jacc_matrix, color = colorRampPalette((RColorBrewer::brewer.pal(n = 7, name ="Reds")))(100),
                      display_numbers=F, cluster_rows = F, number_color='black', border_color=NA,
                      cluster_cols = T, na_col=NA, cellwidth = celldim, cellheight = celldim,
                      legend_breaks = c(0, 0.25, 0.50, 0.75, 1.0), legend=T,
