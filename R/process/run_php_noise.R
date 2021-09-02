@@ -34,8 +34,8 @@ opts_list <- list(list(
 
 # Design
 design <- tibble(
-  set_name = 'unweighted', # name of the set resource
-  bench_name = "beltrao", # name of the benchmark data
+  set_name = 'normal', # name of the set resource
+  bench_name = '0', # name of the benchmark data
   stats_list = stats_list,
   opts_list = opts_list,
   bexpr_loc = expr_fname, # benchmark data location
@@ -45,14 +45,21 @@ design <- tibble(
   target_col = "target", # target name of the set source
   filter_col = "confidence", # column by which we wish to filter
   filter_crit = list(c('A')), # criteria by which we wish to filter,
-  weight_crit = list(list(.likelihood = "likelihood"))
+  noise_crit = list(NA)
 )
 
 design <- bind_rows(
   design,
-  design %>%
-    mutate(set_name ="weighted", weight_crit = list(NA))
-  )
+  map_df(c('add', 'del'), function(mode){
+    map_df(c(0.25, 0.5, 0.75), function(perc){
+      map_df(1:5, function(i){
+        design %>%
+          mutate(set_name=paste0(mode,as.character(i)), bench_name=as.character(perc),
+                 noise_crit = list(list(mode=mode, perc=perc, seed=i)))
+      })
+    })
+  })
+)
 
 # Run benchmark
 result <- run_benchmark(
@@ -63,9 +70,9 @@ result <- run_benchmark(
   .silent = FALSE, # silently run the pipeline
   .downsample_pr = TRUE, # downsample TNs for precision-recall curve
   .downsample_roc = TRUE, # downsample TNs for ROC
-  .downsample_times = 100, # downsampling iterations
+  .downsample_times = 5, # downsampling iterations
   .url_bool = FALSE # whether to load from url
 )
 
 # Save result
-saveRDS(result@bench_res, file.path(prc_path, 'php_result.rds'))
+saveRDS(result@bench_res, file.path(prc_path, 'php_noise.rds'))

@@ -92,8 +92,29 @@ jac_heat <- pheatmap(jacc_matrix, color = colorRampPalette((RColorBrewer::brewer
                      legend_breaks = c(0, 0.25, 0.50, 0.75, 1.0), legend=T,
                      show_rownames = T, show_colnames = T)
 
+
+stats <- rownames(corr_matrix)
+corr_matrix <- corr_matrix[stats,stats]
+jacc_matrix <- jacc_matrix[stats,stats]
+corr_jacc <- tibble(
+  corr = corr_matrix[upper.tri(corr_matrix)],
+  jacc = jacc_matrix[upper.tri(jacc_matrix)]
+)
+
+corr_jacc_p <- ggplot(corr_jacc, aes(x=corr,
+                                     y=jacc)) +
+  theme_classic() +
+  geom_point() +
+  xlab('Correlations') +
+  ylab('Jaccard Indexes') + theme(aspect.ratio=1)
+
 path_figs <- file.path('figures')
 dir.create(path_figs, showWarnings = F, recursive = T)
+pdf(file = file.path(path_figs, 'rna_corr_jacc.pdf'),
+    width = 4, # The width of the plot in inches
+    height = 4) # The height of the plot in inches
+corr_jacc_p
+dev.off()
 pdf(file = file.path(path_figs, 'rna_corr.pdf'),
     width = 4, # The width of the plot in inches
     height = 4) # The height of the plot in inches
