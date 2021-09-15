@@ -11,13 +11,14 @@ meta_fname <- file.path(raw_path, "rna_meta.rds")
 netw_fname <- file.path(raw_path, 'dorothea.rds')
 
 # List of the methods to call
-stats_list = list(c('mean','pscira','scira','viper','gsva','ora','fgsea'))
+stats_list = list(c('aucell','wmean','wsum','scira','viper','gsva','ora','fgsea'))
 
 # List of options for each method
 opts_list <- list(list(
-  mean = list(times=100, .mor = "mor"),
-  pscira = list(times=100, .mor = "mor"),
-  scira = list(.mor = "mor", fast = FALSE, center=FALSE),
+  aucell = list(nCores=4),
+  wmean = list(times=100, .mor = "mor"),
+  wsum = list(times=100, .mor = "mor"),
+  scira = list(.mor = "mor", fast = TRUE, center=FALSE),
   viper = list(verbose = FALSE,
                minsize = 0,
                .mor = "mor",

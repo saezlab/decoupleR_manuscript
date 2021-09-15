@@ -12,8 +12,8 @@ path_figs <- file.path('figures')
 dir.create(path_figs, showWarnings = F, recursive = T)
 
 # Read
-php_fname <- file.path('data', 'prc', 'php_noise.rds')
-php_result <- readRDS(php_fname) %>%
+rna_fname <- file.path('data', 'prc', 'rna_noise.rds')
+rna_result <- readRDS(rna_fname) %>%
   tidyr::separate(set_name, c('mode','perm'), sep='(?=[[:digit:]]+)') %>%
   rename('perc'=bench_name) %>%
   mutate(perc = paste0(as.double(perc)*100, ' %'))
@@ -22,7 +22,7 @@ php_result <- readRDS(php_fname) %>%
 # Correlations of activities by noise
 ###
 # Divide by normal, add and del
-lst_dfs <- php_result %>%
+lst_dfs <- rna_result %>%
   select(mode, perm, perc, activity) %>%
   unnest(activity) %>%
   select(mode, perm, perc, statistic, source, id, score) %>%
@@ -114,7 +114,7 @@ del_cors_p <- corrs %>%
   ylim(n_min, n_max)
 
 # Write
-pdf(file = file.path(path_figs, 'php_noise_corr.pdf'),
+pdf(file = file.path(path_figs, 'rna_noise_corr.pdf'),
     width = 14, # The width of the plot in inches
     height = 7) # The height of the plot in inches
 add_cors_p + del_cors_p + plot_annotation(tag_levels = 'a')
@@ -124,7 +124,7 @@ dev.off()
 # Difference of AUROC/AUPRC by noise
 ###
 # AUROC
-aucs <- php_result %>%
+aucs <- rna_result %>%
   select(-prc, -activity) %>%
   mutate(roc = map(roc, function(df){
     df %>%
@@ -135,7 +135,7 @@ aucs <- php_result %>%
   unnest(cols = c(roc))
 
 # AUPRC
-prcs <- php_result %>%
+prcs <- rna_result %>%
   select(-roc, -activity) %>%
   mutate(prc = map(prc, function(df){
     df %>%
@@ -144,7 +144,6 @@ prcs <- php_result %>%
       pull(raw_auc)
   })) %>%
   unnest(cols = c(prc))
-
 
 # Facet plot aucs
 medians <- aucs %>%
@@ -165,7 +164,7 @@ p_roc_add <- aucs %>%
   theme_light() +
   theme(text = element_text(size=16),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
-        ) +
+  ) +
   ylim(0.5, 1) +
   xlab('') +
   ylab('AUROC') +
@@ -210,7 +209,7 @@ p_prc_add <- prcs %>%
   ) +
   ylim(0.5, 1) +
   xlab('') +
-  ylab('AUROC') +
+  ylab('AUPRC') +
   ggtitle('Adding random edges')
 
 p_prc_del <- prcs %>%
@@ -230,7 +229,7 @@ p_prc_del <- prcs %>%
   ylab('AUPRC') +
   ggtitle('Deleting random edges')
 
-pdf(file = file.path(path_figs, 'php_noise_auc.pdf'),
+pdf(file = file.path(path_figs, 'rna_noise_auc.pdf'),
     width = (4*4), # The width of the plot in inches
     height = (4*4)) # The height of the plot in inches
 p <- p_roc_add / p_roc_del / p_prc_add / p_prc_del

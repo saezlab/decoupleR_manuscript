@@ -24,9 +24,9 @@ df <- php_result %>%
   dplyr::filter(set_name == 'weighted') %>%
   dplyr::select(set_name, filter_crit, activity) %>%
   tidyr::unnest(activity) %>%
-  select(set_name, filter_crit, id, tf, statistic, score) %>%
+  select(set_name, filter_crit, id, source, statistic, score) %>%
   pivot_wider(names_from=statistic, values_from=score) %>%
-  select(-set_name, -filter_crit, -id, -tf)
+  select(-set_name, -filter_crit, -id, -source)
 corr_matrix <- matrix(0, ncol(df), ncol(df))
 colnames(corr_matrix) <- colnames(df)
 rownames(corr_matrix) <- colnames(df)
@@ -57,9 +57,9 @@ stat_acts <- php_result %>%
   dplyr::filter(set_name == 'weighted') %>%
   select(activity) %>%
   unnest(cols=c(activity)) %>%
-  select(statistic, tf, id, score)
+  select(statistic, source, id, score)
 
-n_top <- length(stat_acts$tf %>% unique())
+n_top <- length(stat_acts$source %>% unique())
 n_top <- ceiling(n_top * 0.05)
 stat_acts <- stat_acts %>%
   group_by(statistic, id) %>%
@@ -67,7 +67,7 @@ stat_acts <- stat_acts %>%
   slice_head(n=n_top) %>%
   group_by(statistic, id) %>%
   select(-score) %>%
-  nest(data=c(tf)) %>%
+  nest(data=c(source)) %>%
   pivot_wider(id_cols = id, names_from = statistic, values_from = data) %>%
   column_to_rownames('id')
 
@@ -84,9 +84,9 @@ jacc_idx <- function(a,b){
 for (name_a in colnames(stat_acts)) {
   for (name_b in colnames(stat_acts)) {
     jacs <- map_dbl(rownames(stat_acts), function(sample){
-      tfs_a <- stat_acts[sample,name_a][[1]]$tf
-      tfs_b <- stat_acts[sample,name_b][[1]]$tf
-      jacc_idx(tfs_a, tfs_b)
+      sources_a <- stat_acts[sample,name_a][[1]]$source
+      sources_b <- stat_acts[sample,name_b][[1]]$source
+      jacc_idx(sources_a, sources_b)
     })
     jacc_matrix[name_a,name_b] <- round(mean(jacs), 4)
   }
@@ -124,7 +124,8 @@ corr_jacc_p <- ggplot(corr_jacc, aes(x=corr,
 pdf(file = file.path(path_figs, 'php_corr_jacc.pdf'),
     width = 12, # The width of the plot in inches
     height = 4.5) # The height of the plot in inches
-as.ggplot(cor_heat) + as.ggplot(jac_heat) + corr_jacc_p
+as.ggplot(cor_heat) + as.ggplot(jac_heat) + corr_jacc_p +
+  plot_annotation(tag_levels = 'a')
 dev.off()
 
 ###
@@ -158,7 +159,8 @@ prcs <- php_result %>%
 both <- aucs %>%
   left_join(prcs) %>%
   group_by(Type, statistic) %>%
-  summarise(roc = median(roc), prc = median(prc), .groups='drop')
+  summarise(roc = median(roc), prc = median(prc), .groups='drop') %>%
+  filter(!(Type=='weighted' & (statistic %in% c('aucell','ora','fgsea','gsva'))))
 
 # Plots
 roc_p <- ggplot(aucs,
@@ -166,34 +168,45 @@ roc_p <- ggplot(aucs,
            y=roc,
            color=Type)
        ) +
-  theme_classic() +
+  theme_light() +
   geom_boxplot() +
   ylim(0.5,1) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(text = element_text(size=12),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.text=element_text(size=11)
+        ) +
   xlab('Methods') +
-  ylab('AUROC')
+  ylab('AUROC') +
+  theme(legend.position="none")
 
 prc_p <- ggplot(prcs, aes(x=forcats::fct_reorder(statistic, prc, .fun = median, .desc =TRUE),
                           y=prc, color=Type)) +
-  theme_classic() +
+  theme_light() +
   geom_boxplot() +
   ylim(0.5,1) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(text = element_text(size=12),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.text=element_text(size=11)
+        ) +
   xlab('Methods') +
   ylab('AUPRC')
 
-both_p <- ggplot(both, aes(x=roc, y=prc, label=statistic, color=Type)) +
-  theme_classic() +
+
+both_p <- ggplot(both,
+                     aes(x=roc, y=prc, label=statistic, color=Type)) +
+  theme_light() +
   geom_point() +
-  geom_text_repel() +
+  geom_text_repel(max.overlaps = Inf) +
+  theme(text = element_text(size=14)) +
   xlab('AUROC') +
   ylab('AUPRC') +
-  geom_line(aes(group = statistic), color='gray',
-            arrow = arrow(length=unit(0.30,"cm"), type = "closed"))
+  xlim(floor(min(c(both$roc, both$prc)) * 100)/100,ceiling(max(c(both$roc, both$prc)) * 100)/100) +
+  ylim(floor(min(c(both$roc, both$prc)) * 100)/100,ceiling(max(c(both$roc, both$prc)) * 100)/100)
 
 # Write
 pdf(file = file.path(path_figs, 'php_roc_prc.pdf'),
-    width = (2*4), # The width of the plot in inches
+    width = (3*3), # The width of the plot in inches
     height = (3*4)) # The height of the plot in inches
-(roc_p + prc_p) / both_p
+(roc_p + prc_p) / both_p +
+  plot_annotation(tag_levels = 'a')
 dev.off()
