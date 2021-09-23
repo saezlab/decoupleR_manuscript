@@ -11,14 +11,17 @@ meta_fname <- file.path(raw_path, "php_meta.rds")
 netw_fname <- file.path(raw_path, 'KSN.rds')
 
 # List of the methods to call
-stats_list = list(c('aucell','wmean','wsum','scira','viper','gsva','ora','fgsea'))
+stats_list = list(c('udt','mdt','aucell','wmean','wsum','ulm','mlm','viper','gsva','ora','fgsea'))
 
 # List of options for each method
 opts_list <- list(list(
-  aucell = list(nCores=4),
+  udt = list(min_n = 20),
+  mdt = list(trees = 10, min_n = 20, nproc = 4),
+  aucell = list(nproc=4),
   wmean = list(times=100, .mor = "mor"),
   wsum = list(times=100, .mor = "mor"),
-  scira = list(.mor = "mor", fast = TRUE, center=FALSE),
+  ulm = list(.mor = "mor", .likelihood = 'likelihood', center=FALSE),
+  mlm = list(.mor = "mor", .likelihood = 'likelihood', center=FALSE),
   viper = list(verbose = FALSE,
                minsize = 0,
                .mor = "mor",

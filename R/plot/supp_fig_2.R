@@ -13,99 +13,111 @@ path_figs <- file.path('figures')
 dir.create(path_figs, showWarnings = F, recursive = T)
 
 # Plot functions
-get_auc_df <- function(df, .type){
-  .type <- enquo(.type)
-  df %>%
-    select(set_name, statistic, !!.type) %>%
-    mutate(!!.type := map(!!.type, function(df){
-      df %>%
-        group_by(run) %>%
-        summarize(raw_auc = unique(raw_auc)) %>%
-        pull(raw_auc)
-    })) %>%
-    unnest(cols = c(!!.type)) %>%
-    filter(!(set_name=='weighted' & (statistic %in% c('aucell','ora','fgsea','gsva'))))
-}
-
-get_auc_boxplot <- function(df, .type, ylabel='AUROC'){
-  .type <- enquo(.type)
-  ggplot(df, aes(x=forcats::fct_reorder(statistic, !!.type, .fun = median, .desc =TRUE),y=!!.type, color=set_name)) +
-    theme_light() +
-    geom_boxplot() +
-    ylim(0.5,1) +
-    theme(text = element_text(size=12),
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    xlab('Methods') +
-    ylab(ylabel)
-}
-
-get_auc_scatter <- function(df){
-  min_lim <- floor(min(c(df$roc, df$prc)) * 100)/100
-  max_lim <- ceiling(max(c(df$roc, df$prc)) * 100)/100
-  ggplot(df, aes(x=roc, y=prc, label=statistic, color=set_name)) +
-    theme_light() +
-    geom_point() +
-    geom_text_repel(max.overlaps = Inf) +
-    theme(text = element_text(size=14)) +
-    xlab('AUROC') +
-    ylab('AUPRC') +
-    xlim(min_lim,max_lim) +
-    ylim(min_lim,max_lim)
-}
-
-test_sign <- function(df, .type){
-  uw_methods <- c("aucell","fgsea","gsva","ora")
-  .type <- enquo(.type)
+get_corr_mat <- function(df, filt = 'dorothea'){
   df <- df %>%
-    mutate(set_name = if_else(statistic %in% uw_methods, 'unweighted', 'weighted')) %>%
-    group_by(set_name) %>%
-    group_split() %>%
-    map(function(df){
-      df %>%
-        pull(!!.type)
-    })
-  wilcox.test(df[[2]], df[[1]], alternative = "g")$p.value
+    dplyr::filter(set_name == filt) %>%
+    dplyr::select(set_name, filter_crit, activity) %>%
+    tidyr::unnest(activity) %>%
+    select(set_name, filter_crit, id, source, statistic, score) %>%
+    pivot_wider(names_from=statistic, values_from=score) %>%
+    select(-set_name, -filter_crit, -id, -source)
+  corr_matrix <- matrix(0, ncol(df), ncol(df))
+  colnames(corr_matrix) <- colnames(df)
+  rownames(corr_matrix) <- colnames(df)
+  for (name_a in colnames(df)) {
+    for (name_b in colnames(df)) {
+      corr_matrix[name_a,name_b] <- cor(x=abs(df[[name_a]]), y=abs(df[[name_b]]), method = 'spearman')
+    }
+  }
+  corr_matrix
+}
+
+jacc_idx <- function(a,b){
+  n_inter <- length(intersect(a,b))
+  n_union <- length(union(a,b))
+  n_inter / n_union
+}
+
+get_jacc_mat <- function(df, filt = 'dorothea'){
+  # Jaccard
+  stat_acts <- df %>%
+    dplyr::filter(set_name == filt) %>%
+    select(activity) %>%
+    unnest(cols=c(activity)) %>%
+    select(statistic, source, id, score)
+
+  n_top <- length(stat_acts$source %>% unique())
+  n_top <- ceiling(n_top * 0.05)
+  stat_acts <- stat_acts %>%
+    group_by(statistic, id) %>%
+    arrange(desc(abs(score))) %>%
+    slice_head(n=n_top) %>%
+    group_by(statistic, id) %>%
+    select(-score) %>%
+    nest(data=c(source)) %>%
+    pivot_wider(id_cols = id, names_from = statistic, values_from = data) %>%
+    column_to_rownames('id')
+
+  jacc_matrix <- matrix(0, ncol(stat_acts), ncol(stat_acts))
+  colnames(jacc_matrix) <- colnames(stat_acts)
+  rownames(jacc_matrix) <- colnames(stat_acts)
+
+  for (name_a in colnames(stat_acts)) {
+    for (name_b in colnames(stat_acts)) {
+      jacs <- map_dbl(rownames(stat_acts), function(sample){
+        sources_a <- stat_acts[sample,name_a][[1]]$source
+        sources_b <- stat_acts[sample,name_b][[1]]$source
+        jacc_idx(sources_a, sources_b)
+      })
+      jacc_matrix[name_a,name_b] <- round(mean(jacs), 4)
+    }
+  }
+  jacc_matrix
+}
+
+get_mat_plot <- function(mat, main = 'Pearson correlation', palette = 'Greens'){
+  # Get order of clustered methods
+  cor_heat <- pheatmap(mat, cluster_rows = T,
+                       cluster_cols = T, silent=T)
+  idxs <- cor_heat$tree_row$order
+  mat <- mat[idxs,idxs]
+
+  # Plot
+  celldim <- 10
+  mat_heat <- pheatmap(mat, color = colorRampPalette((RColorBrewer::brewer.pal(n = 7, name =palette)))(100),
+                       display_numbers=F, cluster_rows = F, number_color='black', border_color=NA,
+                       cluster_cols = T, na_col=NA, cellwidth = celldim, cellheight = celldim,
+                       legend_breaks = c(0, 0.25, 0.50, 0.75, 1.0), legend=T,
+                       show_rownames = T, show_colnames = T, main=main,
+                       width = 4, height=4, silent=T)
+  return(as.ggplot(mat_heat))
 }
 
 # Read
 rna_result <- readRDS(file.path('data', 'prc', 'rna_result.rds'))
 php_result <- readRDS(file.path('data', 'prc', 'php_result.rds'))
 
-# Generate data-frames
-rna_roc_df <- get_auc_df(rna_result, roc)
-rna_prc_df <- get_auc_df(rna_result, prc)
-php_roc_df <- get_auc_df(php_result, roc)
-php_prc_df <- get_auc_df(php_result, prc)
-
-rna_auc_df <- rna_roc_df %>%
-  left_join(rna_prc_df) %>%
-  group_by(set_name, statistic) %>%
-  summarise(roc = median(roc), prc = median(prc), .groups='drop')
-php_auc_df <- php_roc_df %>%
-  left_join(php_prc_df) %>%
-  group_by(set_name, statistic) %>%
-  summarise(roc = median(roc), prc = median(prc), .groups='drop')
-
-# Test sgnificance
-roc_pval <- test_sign(full_join(rna_roc_df, php_roc_df), roc)
-prc_pval <- test_sign(full_join(rna_prc_df, php_prc_df), prc)
-print(paste0('roc wilcoxon pvalue: ', roc_pval))
-print(paste0('prc wilcoxon pvalue: ', prc_pval))
+# Generate matrices
+rna_corr_mat <- get_corr_mat(rna_result, 'dorothea')
+rna_jacc_mat <- get_jacc_mat(rna_result, 'dorothea')
+php_corr_mat <- get_corr_mat(php_result, 'weighted')
+php_jacc_mat <- get_jacc_mat(php_result, 'weighted')
+print(paste0('Median rna corr: ', median(rna_corr_mat[upper.tri(rna_corr_mat)])))
+print(paste0('Median rna jacc: ', median(rna_jacc_mat[upper.tri(rna_jacc_mat)])))
+print(paste0('Median php corr: ', median(php_corr_mat[upper.tri(php_corr_mat)])))
+print(paste0('Median php jacc: ', median(php_jacc_mat[upper.tri(php_jacc_mat)])))
 
 # Generate plots
-rna_roc_boxp <- get_auc_boxplot(rna_roc_df, roc, 'AUROC') + theme(legend.position="none")
-rna_prc_boxp <- get_auc_boxplot(rna_prc_df, prc, 'AUPRC') + theme(legend.position="none")
-php_roc_boxp <- get_auc_boxplot(php_roc_df, roc, 'AUROC')
-php_prc_boxp <- get_auc_boxplot(php_prc_df, prc, 'AUPRC')
-
-rna_auc_scatt <- get_auc_scatter(rna_auc_df) + theme(legend.position="none")
-php_auc_scatt <- get_auc_scatter(php_auc_df) + theme(legend.position="none")
+rna_corr_plot <- get_mat_plot(rna_corr_mat, main='Pearson correlation', palette='Greens')
+rna_jac_plot <- get_mat_plot(rna_jacc_mat, main='Jaccard index', palette='Reds')
+php_corr_plot <- get_mat_plot(php_corr_mat, main='Pearson correlation', palette='Greens')
+php_jacc_plot <- get_mat_plot(php_jacc_mat, main='Jaccard index', palette='Reds')
 
 # Merge together and save
 pdf(file = file.path(path_figs, 'supp_fig_2.pdf'),
-    width = 12, # The width of the plot in inches
-    height = 12) # The height of the plot in inches
-((rna_roc_boxp / rna_prc_boxp) | rna_auc_scatt) / ((php_roc_boxp / php_prc_boxp) | php_auc_scatt) +
-  plot_layout(guides = 'collect', widths = c(1, 2))  +
+    width = 8, # The width of the plot in inches
+    height = 9) # The height of the plot in inches
+rna_corr_plot + rna_jac_plot + php_corr_plot + php_jacc_plot +
   plot_annotation(tag_levels = 'A')
 dev.off()
+

@@ -35,6 +35,9 @@ get_dorothea <- function(path){
   # Add likelihood
   dorothea_hs['likelihood'] <- 1
 
+  # Filter by confidence
+  dorothea_hs <- dplyr::filter(dorothea_hs, confidence %in% c("A","B","C"))
+
   # Save
   saveRDS(dorothea_hs, file.path(path, 'dorothea.rds'))
 }
@@ -70,6 +73,18 @@ get_rna_data <- function(path){
   Sys.sleep(1)
   download.file(meta_url, file.path(path, 'rna_meta.rds'))
   Sys.sleep(1)
+
+  # Filter by overlap of TFs
+  rna_expr <- readRDS(file.path(path, 'rna_expr.rds'))
+  rna_meta <- readRDS(file.path(path, 'rna_meta.rds'))
+  network <- readRDS(file.path(path, 'dorothea.rds'))
+  tfs <- network$tf
+  rna_meta <- dplyr::filter(rna_meta, target %in% tfs)
+  rna_expr <- rna_expr[, colnames(rna_expr) %in% rna_meta$id]
+
+  # Save
+  saveRDS(rna_expr, file.path(path, 'rna_expr.rds'))
+  saveRDS(rna_meta, file.path(path, 'rna_meta.rds'))
 }
 
 get_php_data <- function(path){
