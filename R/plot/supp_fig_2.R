@@ -75,7 +75,7 @@ get_jacc_mat <- function(df, filt = 'dorothea'){
   jacc_matrix
 }
 
-get_mat_plot <- function(mat, main = 'Pearson correlation', palette = 'Greens'){
+get_mat_plot <- function(mat, main = 'Spearman correlation', palette = 'Greens'){
   # Get order of clustered methods
   cor_heat <- pheatmap(mat, cluster_rows = T,
                        cluster_cols = T, silent=T)
@@ -108,9 +108,9 @@ print(paste0('Median php corr: ', median(php_corr_mat[upper.tri(php_corr_mat)]))
 print(paste0('Median php jacc: ', median(php_jacc_mat[upper.tri(php_jacc_mat)])))
 
 # Generate plots
-rna_corr_plot <- get_mat_plot(rna_corr_mat, main='Pearson correlation', palette='Greens')
+rna_corr_plot <- get_mat_plot(rna_corr_mat, main='Spearman correlation', palette='Greens')
 rna_jac_plot <- get_mat_plot(rna_jacc_mat, main='Jaccard index', palette='Reds')
-php_corr_plot <- get_mat_plot(php_corr_mat, main='Pearson correlation', palette='Greens')
+php_corr_plot <- get_mat_plot(php_corr_mat, main='Spearman correlation', palette='Greens')
 php_jacc_plot <- get_mat_plot(php_jacc_mat, main='Jaccard index', palette='Reds')
 
 # Merge together and save

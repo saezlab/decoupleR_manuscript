@@ -24,7 +24,6 @@ get_time_df <- function(df){
 
 get_time_plot <- function(df){
   ggplot(df, aes(x=forcats::fct_reorder(statistic, Time, .fun = median, .desc =TRUE),y=Time)) +
-    theme_light() +
     geom_boxplot() +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     xlab('Methods') +
@@ -32,7 +31,8 @@ get_time_plot <- function(df){
     scale_y_continuous(
       breaks = seq(0,
                    ceiling(max(df$Time[!is.na(df$Time)]) / 30) * 30, by = 30)
-    )
+    ) +
+    theme_bw()
 }
 
 # Read
@@ -48,9 +48,9 @@ rna_time_p <- get_time_plot(rna_time_df)
 php_time_p <- get_time_plot(php_time_df)
 
 # Merge together and save
-pdf(file = file.path(path_figs, 'supp_fig_5.pdf'),
-    width = 8, # The width of the plot in inches
-    height = 4) # The height of the plot in inches
+pdf(file = file.path(path_figs, 'supp_fig_6.pdf'),
+    width = 6, # The width of the plot in inches
+    height = 3) # The height of the plot in inches
 rna_time_p + php_time_p +
   plot_annotation(tag_levels = 'A')
 dev.off()

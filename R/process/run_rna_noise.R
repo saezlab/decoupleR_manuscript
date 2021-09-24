@@ -2,6 +2,7 @@ library(decoupleRBench)
 library(dplyr)
 library(purrr)
 library(tidyverse)
+source(file.path('R', 'process', 'methods_params.R'))
 
 # Paths to benchmark data, benchmark metadata and network
 raw_path <- file.path('data', 'raw')
@@ -10,29 +11,6 @@ dir.create(prc_path, showWarnings = F, recursive = T)
 expr_fname <- file.path(raw_path, "rna_expr.rds")
 meta_fname <- file.path(raw_path, "rna_meta.rds")
 netw_fname <- file.path(raw_path, 'dorothea.rds')
-
-# List of the methods to call
-stats_list = list(c('udt','mdt','aucell','wmean','wsum','ulm','mlm','viper','gsva','ora','fgsea'))
-
-# List of options for each method
-opts_list <- list(list(
-  udt = list(min_n = 20),
-  mdt = list(trees = 10, min_n = 20, nproc = 4),
-  aucell = list(nproc=4),
-  wmean = list(times=100, .mor = "mor"),
-  wsum = list(times=100, .mor = "mor"),
-  ulm = list(.mor = "mor", .likelihood = 'likelihood', center=FALSE),
-  mlm = list(.mor = "mor", .likelihood = 'likelihood', center=FALSE),
-  viper = list(verbose = FALSE,
-               minsize = 0,
-               .mor = "mor",
-               .likelihood = "likelihood",
-               pleiotropy = T,
-               eset.filter = F),
-  gsva = list(verbose = FALSE, method = "gsva"),
-  ora = list(n_up=300, n_bottom=300, n_background=20000),
-  fgsea = list(force_ties = T, options = list(nproc=4))
-))
 
 # Design
 design <- tibble(

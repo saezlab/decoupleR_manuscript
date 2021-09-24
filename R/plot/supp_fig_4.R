@@ -84,24 +84,13 @@ get_corr_plot <- function(df, mode_noise, title, min_corr=0){
           y=corr,
           color=perc)
     ) +
-    theme_light() +
     geom_boxplot(outlier.size=0) +
-    theme(text = element_text(size=14),
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     xlab('Methods') +
     ylab('Correlation') +
     ggtitle(title) +
-    ylim(min_corr,1)
-}
-
-test_sign <- function(df){
-  df <- df %>%
-    group_by(mode) %>%
-    group_split() %>%
-    map(function(df){
-      pull(df, corr)
-    })
-  wilcox.test(df[[1]], df[[2]], alternative = "g")$p.value
+    ylim(min_corr,1) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
 
 # Read
@@ -111,21 +100,6 @@ php_result <- read_rds(file.path('data', 'prc', 'php_noise.rds'))
 # Generate data-frames
 rna_corr_df <- get_corr_df(rna_result)
 php_corr_df <- get_corr_df(php_result)
-
-# Test significance
-median_corrs <- full_join(rna_corr_df, php_corr_df) %>%
-  group_by(mode) %>%
-  group_split() %>%
-  map(function(df){
-    df %>%
-      group_by(mode) %>%
-      summarize(median_corr = median(corr))
-  }) %>%
-  bind_rows()
-
-pval <- test_sign(full_join(rna_corr_df, php_corr_df))
-print(median_corrs)
-print(paste0('wilcoxon pvalue: ', pval))
 
 # Generate plots
 both_corr_df <- rbind(rna_corr_df, php_corr_df)

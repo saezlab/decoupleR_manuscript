@@ -24,10 +24,10 @@ get_dist_plot <- function(df){
   df %>%
     ggplot(aes(x=score, color=statistic, fill=statistic)) +
     geom_density() +
-    theme_light() +
     theme(text = element_text(size=12)) +
     facet_wrap(~ statistic, scales='free') +
-    xlab('scores')
+    xlab('scores') +
+    theme_bw()
 }
 
 # Read
@@ -43,17 +43,19 @@ get_dist_plot <- function(df){
   df %>%
     ggplot(aes(x=score, color=statistic, fill=statistic)) +
     geom_density() +
-    theme_light() +
     theme(text = element_text(size=12)) +
     facet_wrap(~ statistic, scales='free') +
-    xlab('scores')
+    xlab('scores') +
+    ylab('densities') +
+    theme_bw() +
+    theme(legend.position = "none")
 }
 
 # Merge together and save
 pdf(file = file.path(path_figs, 'supp_fig_1.pdf'),
     width = 10, # The width of the plot in inches
-    height = 12) # The height of the plot in inches
-get_dist_plot(rna_scores) / get_dist_plot(php_scores) +
+    height = 10) # The height of the plot in inches
+(get_dist_plot(rna_scores)) / get_dist_plot(php_scores) +
   plot_layout(guides = 'collect')  +
   plot_annotation(tag_levels = 'A')
 dev.off()

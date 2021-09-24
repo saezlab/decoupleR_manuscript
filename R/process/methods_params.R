@@ -1,0 +1,22 @@
+# List of the methods to call
+stats_list = list(c('udt','mdt','aucell','wmean','wsum','ulm','mlm','viper','gsva','ora','fgsea'))
+
+# List of options for each method
+opts_list <- list(list(
+  udt = list(min_n = 20),
+  mdt = list(trees = 10, min_n = 20, nproc = 4),
+  aucell = list(nproc=4),
+  wmean = list(times=100, .mor = "mor"),
+  wsum = list(times=100, .mor = "mor"),
+  ulm = list(.mor = "mor", .likelihood = 'likelihood', center=FALSE),
+  mlm = list(.mor = "mor", .likelihood = 'likelihood', center=FALSE),
+  viper = list(verbose = FALSE,
+               minsize = 0,
+               .mor = "mor",
+               .likelihood = "likelihood",
+               pleiotropy = T,
+               eset.filter = F),
+  gsva = list(verbose = FALSE, method = "gsva"),
+  ora = list(n_up=300, n_bottom=300, n_background=20000),
+  fgsea = list(force_ties = T, options = list(nproc=4))
+))

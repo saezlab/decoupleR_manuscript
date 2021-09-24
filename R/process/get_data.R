@@ -148,5 +148,4 @@ get_data <- function(path){
 }
 
 # Run
-get_data('data/raw')
-
+get_data(file.path('data','raw'))

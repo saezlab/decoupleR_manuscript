@@ -20,58 +20,52 @@ read_rds <- function(path){
     mutate(perc = paste0(as.double(perc)*100, ' %'))
 }
 
-# Read
-rna_result <- read_rds(file.path('data', 'prc', 'rna_noise.rds'))
-php_result <- read_rds(file.path('data', 'prc', 'php_noise.rds'))
-
-# Plot functions
 get_auc_df <- function(df, .type){
   .type <- enquo(.type)
   df %>%
     select(mode, perm, perc, statistic, !!.type) %>%
-    unnest(!!.type)
+    unnest(!!.type) %>%
+    mutate(mode = factor(mode, levels=c('normal', 'add', 'del')))
 }
 
-get_auc_df(rna_result, roc)
+get_auc_boxplot <- function(df){
+  ggplot(df, aes(x=mode, y=raw_auc, color=perc)) +
+    geom_boxplot() +
+    theme(text = element_text(20),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    xlab('') +
+    ylab('AUCs') +
+    facet_wrap(~ statistic) +
+    theme_bw()
+}
 
-rocs <- rna_result %>%
-  select(-prc, -activity) %>%
-  mutate(roc = map(roc, function(df){
-    df %>%
-      group_by(run) %>%
-      summarize(raw_auc = unique(raw_auc)) %>%
-      pull(raw_auc)
-  })) %>%
-  unnest(cols = c(roc))
+# Read
+rna_result <- read_rds(file.path('data', 'prc', 'rna_noise.rds'))
+php_result <- read_rds(file.path('data', 'prc', 'php_noise.rds'))
 
-# AUPRC
-prcs <- rna_result %>%
-  select(-roc, -activity) %>%
-  mutate(prc = map(prc, function(df){
-    df %>%
-      group_by(run) %>%
-      summarize(raw_auc = unique(raw_auc)) %>%
-      pull(raw_auc)
-  })) %>%
-  unnest(cols = c(prc))
+# Process dfs
+rna_roc <- get_auc_df(rna_result, roc)
+rna_prc <- get_auc_df(rna_result, prc)
+php_roc <- get_auc_df(php_result, roc)
+php_prc <- get_auc_df(php_result, prc)
+df <- full_join(full_join(rna_roc, rna_prc), full_join(php_roc, php_prc))
 
-df <- rna_result %>%
-  full_join(php_result) %>%
-  select(-prc, -activity) %>%
-  mutate(roc = map(roc, function(df){
-    df %>%
-      group_by(run) %>%
-      summarize(raw_auc = unique(raw_auc)) %>%
-      pull(raw_auc)
-  })) %>%
-  unnest(cols = c(roc))
+# Plot
+plt <- get_auc_boxplot(df)
 
-two.way <- aov(roc ~ mode, data = df)
+# Test sign
+two.way <- aov(raw_auc ~ mode, data = mutate(df,mode = factor(
+  mode, levels=c('del', 'add', 'normal'))))
 
 summary(two.way)
 tukey.two.way<-TukeyHSD(two.way)
 
 tukey.two.way
 
-
+# Save
+pdf(file = file.path(path_figs, 'supp_fig_5.pdf'),
+    width = 6, # The width of the plot in inches
+    height = 6) # The height of the plot in inches
+plt
+dev.off()
 
