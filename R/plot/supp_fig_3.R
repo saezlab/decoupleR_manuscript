@@ -24,7 +24,7 @@ get_auc_df <- function(df, .type){
         pull(raw_auc)
     })) %>%
     unnest(cols = c(!!.type)) %>%
-    filter(!(set_name=='weighted' & (statistic %in% c('aucell','ora','fgsea','gsva'))))
+    filter(!(set_name=='weighted' & (statistic %in% c('aucell','ora','norm_fgsea','fgsea','gsva'))))
 }
 
 get_auc_boxplot <- function(df, .type, ylabel='AUROC'){
@@ -62,7 +62,7 @@ get_auc_scatter <- function(df){
 }
 
 test_sign <- function(df, .type){
-  uw_methods <- c("aucell","fgsea","gsva","ora")
+  uw_methods <- c("aucell", "norm_fgsea", "fgsea","gsva","ora")
   .type <- enquo(.type)
   df <- df %>%
     mutate(set_name = if_else(statistic %in% uw_methods, 'unweighted', 'weighted')) %>%
