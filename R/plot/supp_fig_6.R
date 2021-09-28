@@ -24,15 +24,15 @@ get_time_df <- function(df){
 
 get_time_plot <- function(df){
   ggplot(df, aes(x=forcats::fct_reorder(statistic, Time, .fun = median, .desc =TRUE),y=Time)) +
-    geom_boxplot() +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    geom_boxplot(outlier.size=0) +
     xlab('Methods') +
     ylab('Time (s)') +
     scale_y_continuous(
       breaks = seq(0,
                    ceiling(max(df$Time[!is.na(df$Time)]) / 30) * 30, by = 30)
     ) +
-    theme_bw()
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
 
 # Read

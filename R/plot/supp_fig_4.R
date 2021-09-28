@@ -34,21 +34,20 @@ get_corr_df <- function(df){
     arrange(source, id, statistic) %>%
     pivot_wider(names_from=statistic, values_from=score) %>%
     unite(pair, source, id, sep='.')
-
   # Compute corrs
   map(list(add_df, del_df), function(noise_df){
     noise_df %>%
       group_by(perc) %>%
       group_split() %>%
-      map(function(df){
-        df %>%
+      map(function(df2){
+        df2 %>%
           group_by(perm) %>%
           group_split() %>%
-          map(function(df2){
-            perc_n <- unique(df2$perc)
-            mode_n <- unique(df2$mode)
-            perm_n <- unique(df2$perm)
-            tmp <- df2 %>%
+          map(function(df3){
+            perc_n <- unique(df3$perc)
+            mode_n <- unique(df3$mode)
+            perm_n <- unique(df3$perm)
+            tmp <- df3 %>%
               arrange(source, id, statistic) %>%
               pivot_wider(names_from=statistic, values_from=score) %>%
               unite(pair, source, id, sep='.') %>%
@@ -117,8 +116,8 @@ print(paste0('add-del wilcoxon pvalue: ', pval))
 
 # Merge together and save
 pdf(file = file.path(path_figs, 'supp_fig_4.pdf'),
-    width = 9, # The width of the plot in inches
-    height = 9) # The height of the plot in inches
+    width = 6, # The width of the plot in inches
+    height = 6) # The height of the plot in inches
 rna_add_box + rna_del_box + php_add_box + php_del_box +
   plot_layout(guides = 'collect')  +
   plot_annotation(tag_levels = 'A')
