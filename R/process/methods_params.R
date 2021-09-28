@@ -4,7 +4,7 @@ stats_list = list(c('udt','mdt','aucell','wmean','wsum','ulm','mlm','viper','gsv
 # List of options for each method
 opts_list <- list(list(
   udt = list(min_n = 20),
-  mdt = list(trees = 1000, min_n = 20, nproc = 4),
+  mdt = list(trees = 10, min_n = 20, nproc = 4),
   aucell = list(nproc=4),
   wmean = list(times=1000),
   wsum = list(times=1000),
