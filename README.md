@@ -25,8 +25,8 @@ To reproduce all the analyses performed in the manuscript, please run:
 Rscript R/process/run_rna_bench.R
 Rscript R/process/run_php_bench.R
 # Run noise analysis (This might take a while)
-Rscript R/process/run_rna_noise.R (~6 hours)
-Rscript R/process/run_php_noise.R (~2 hours)
+Rscript R/process/run_rna_noise.R #(~6 hours)
+Rscript R/process/run_php_noise.R #(~2 hours)
 ```
 
 ## Figures
