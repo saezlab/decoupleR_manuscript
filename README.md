@@ -12,6 +12,14 @@ into account the sign and weight of network interactions. Using decoupleR, we
 evaluated the performance of contemporary methods on transcriptomic and 
 phospho-proteomic perturbation experiments.
 
+## Benchmark pipeline
+In this manuscript we have built a separate R package to benchmark decoupleR,
+called decoupleRBench. You can install it by running:
+```
+devtools::install_github('saezlab/decoupleRBench')
+```
+You can check the source code in: https://github.com/saezlab/decoupleRBench
+
 ## Data
 To retrieve all the necessary data, please run:
 ```
