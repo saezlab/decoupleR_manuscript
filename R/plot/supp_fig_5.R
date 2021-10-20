@@ -64,7 +64,7 @@ tukey.two.way
 
 # Save
 pdf(file = file.path(path_figs, 'supp_fig_5.pdf'),
-    width = 6, # The width of the plot in inches
+    width = 7, # The width of the plot in inches
     height = 6) # The height of the plot in inches
 plt
 dev.off()

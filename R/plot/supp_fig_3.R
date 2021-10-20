@@ -65,6 +65,7 @@ test_sign <- function(df, .type){
   uw_methods <- c("aucell", "norm_fgsea", "fgsea","gsva","ora")
   .type <- enquo(.type)
   df <- df %>%
+    filter(statistic != 'consensus') %>%
     mutate(set_name = if_else(statistic %in% uw_methods, 'unweighted', 'weighted')) %>%
     group_by(set_name) %>%
     group_split() %>%
@@ -73,6 +74,10 @@ test_sign <- function(df, .type){
         pull(!!.type)
     })
   wilcox.test(df[[2]], df[[1]], alternative = "g")$p.value
+}
+
+test_better_methods <- function(df){
+
 }
 
 # Read
@@ -94,11 +99,44 @@ php_auc_df <- php_roc_df %>%
   group_by(set_name, statistic) %>%
   summarise(roc = median(roc), prc = median(prc), .groups='drop')
 
-# Test sgnificance
+# Test significance
 roc_pval <- test_sign(full_join(rna_roc_df, php_roc_df), roc)
 prc_pval <- test_sign(full_join(rna_prc_df, php_prc_df), prc)
 print(paste0('roc wilcoxon pvalue: ', roc_pval))
 print(paste0('prc wilcoxon pvalue: ', prc_pval))
+
+all_auc_df <- rna_roc_df %>%
+  left_join(rna_prc_df) %>%
+  left_join(php_roc_df) %>%
+  left_join(php_prc_df) %>%
+  pivot_longer(cols=c(roc, prc)) %>%
+  select(-set_name, -name)
+
+median_auc <- all_auc_df %>%
+  group_by(statistic) %>%
+  summarise(median_auc = median(value)) %>%
+  arrange(median_auc)
+
+methods_df <- all_auc_df %>%
+  group_by(statistic) %>%
+  group_split() %>%
+  map(function(df){
+    meth <- unique(df$statistic)
+    other_meth <- all_auc_df %>%
+      filter(statistic != meth)
+    p_value <- wilcox.test(df$value, other_meth$value, alternative = "g")$p.value
+    tibble(statistic = meth, p_value = p_value)
+  }) %>%
+  bind_rows() %>%
+  left_join(median_auc) %>%
+  mutate(p_value = p.adjust(p_value, method='fdr')) %>%
+  arrange(-median_auc)
+
+print(paste0('Best performing methods: ',
+             paste0(pluck(filter(methods_df, p_value < 0.05), 'statistic'),
+                    collapse=', ')))
+
+write.csv(methods_df, file.path(path_figs, 'supp_tab_2.csv'), row.names=F)
 
 # Generate plots
 rna_roc_boxp <- get_auc_boxplot(rna_roc_df, roc, 'AUROC') + theme(legend.position="none")

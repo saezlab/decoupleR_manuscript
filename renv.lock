@@ -405,13 +405,6 @@
       "Repository": "CRAN",
       "Hash": "ebaa97ac99cc2daf04e77eecc7b781d7"
     },
-    "codetools": {
-      "Package": "codetools",
-      "Version": "0.2-18",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "019388fc48e48b3da0d3a76ff94608a8"
-    },
     "colorspace": {
       "Package": "colorspace",
       "Version": "2.0-2",
@@ -470,15 +463,15 @@
     },
     "decoupleR": {
       "Package": "decoupleR",
-      "Version": "1.1.0",
+      "Version": "1.99.1",
       "Source": "Bioconductor",
-      "Hash": "90fea34074ffe231b5f5dbdbb548eec2"
+      "Hash": "1f8f70f01a0f8957c560211fa3411a9d"
     },
     "decoupleRBench": {
       "Package": "decoupleRBench",
-      "Version": "0.0.0.9000",
+      "Version": "0.0.2",
       "Source": "unknown",
-      "Hash": "e4a4c0339fcd051e9aa2dacad03d3a76"
+      "Hash": "c540458dfec64463fe5e0805271cfede"
     },
     "digest": {
       "Package": "digest",
@@ -486,28 +479,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "49b5c6e230bfec487b8917d5a0c77cca"
-    },
-    "doMC": {
-      "Package": "doMC",
-      "Version": "1.3.7",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "OS_type": "unix",
-      "Hash": "a51780731e2ec5eee714097df69ea204"
-    },
-    "doParallel": {
-      "Package": "doParallel",
-      "Version": "1.0.16",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "2dc413572eb42475179bfe0afabd2adf"
-    },
-    "doRNG": {
-      "Package": "doRNG",
-      "Version": "1.8.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "a32487a942bdf5fd34224ad46f786e67"
     },
     "dplyr": {
       "Package": "dplyr",
@@ -591,13 +562,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "81c3244cab67468aac4c60550832655d"
-    },
-    "foreach": {
-      "Package": "foreach",
-      "Version": "1.5.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "e32cfc0973caba11b65b1fa691b4d8c9"
     },
     "formatR": {
       "Package": "formatR",
@@ -773,13 +737,6 @@
       "Repository": "CRAN",
       "Hash": "7ab57a6de7f48a8dc84910d1eca42883"
     },
-    "iterators": {
-      "Package": "iterators",
-      "Version": "1.0.13",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "64778782a89480e9a644f69aad9a2877"
-    },
     "jquerylib": {
       "Package": "jquerylib",
       "Version": "0.1.4",
@@ -831,10 +788,10 @@
     },
     "lattice": {
       "Package": "lattice",
-      "Version": "0.20-44",
+      "Version": "0.20-45",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "f36bf1a849d9106dc2af72e501f9de41"
+      "Hash": "b64cdbb2b340437c4ee047a1f4c4377b"
     },
     "lazyeval": {
       "Package": "lazyeval",
@@ -887,10 +844,10 @@
     },
     "mgcv": {
       "Package": "mgcv",
-      "Version": "1.8-36",
+      "Version": "1.8-37",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "93cc747b0e1ad882a4570463c3575c23"
+      "Hash": "42ee1ee3259845fd07819f58022a3532"
     },
     "mime": {
       "Package": "mime",
@@ -922,10 +879,10 @@
     },
     "nlme": {
       "Package": "nlme",
-      "Version": "3.1-152",
+      "Version": "3.1-153",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "35de1ce639f20b5e10f7f46260730c65"
+      "Hash": "2d632e0d963a653a0329756ce701ecdd"
     },
     "openssl": {
       "Package": "openssl",
@@ -1127,13 +1084,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "1fb097f233ee98968f8e5d0bcd42df6d"
-    },
-    "rngtools": {
-      "Package": "rngtools",
-      "Version": "1.5.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "367a915f939520767660671efa0e32bd"
     },
     "rpart": {
       "Package": "rpart",
