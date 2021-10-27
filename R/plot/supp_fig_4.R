@@ -13,112 +13,96 @@ path_figs <- file.path('figures')
 dir.create(path_figs, showWarnings = F, recursive = T)
 
 # Plot functions
-read_rds <- function(path){
-  readRDS(path) %>%
-    tidyr::separate(set_name, c('mode','perm'), sep='(?=[[:digit:]]+)') %>%
-    rename('perc'=bench_name) %>%
-    mutate(perc = paste0(as.double(perc)*100, ' %'))
-}
-
-get_corr_df <- function(df){
-  # Split df by normal, add and del
-  lst_dfs <- df %>%
-    select(mode, perm, perc, activity) %>%
-    unnest(activity) %>%
-    select(mode, perm, perc, statistic, source, id, score) %>%
-    group_by(mode) %>%
-    group_split()
-  add_df <- lst_dfs[[1]]
-  del_df <- lst_dfs[[2]]
-  normal_df <- lst_dfs[[3]] %>%
-    arrange(source, id, statistic) %>%
-    pivot_wider(names_from=statistic, values_from=score) %>%
-    unite(pair, source, id, sep='.')
-  # Compute corrs
-  map(list(add_df, del_df), function(noise_df){
-    noise_df %>%
-      group_by(perc) %>%
-      group_split() %>%
-      map(function(df2){
-        df2 %>%
-          group_by(perm) %>%
-          group_split() %>%
-          map(function(df3){
-            perc_n <- unique(df3$perc)
-            mode_n <- unique(df3$mode)
-            perm_n <- unique(df3$perm)
-            tmp <- df3 %>%
-              arrange(source, id, statistic) %>%
-              pivot_wider(names_from=statistic, values_from=score) %>%
-              unite(pair, source, id, sep='.') %>%
-              filter(pair %in% intersect(.$pair, normal_df$pair)) %>%
-              select(-mode, -perm, -perc)
-            normal_df_tmp <- normal_df %>%
-              filter(pair %in% intersect(.$pair, tmp$pair))
-            tmp <- tmp %>%
-              select(-pair)
-            map(colnames(tmp), function(name){
-              tibble(
-                mode = mode_n,
-                perc = perc_n,
-                perm = perm_n,
-                statistic = name,
-                corr = cor(normal_df_tmp[[name]], tmp[[name]], method='spearman')
-              )
-            }) %>%
-              bind_rows()
-          }) %>%
-          bind_rows()
-      }) %>%
-      bind_rows()
-  }) %>%
-    bind_rows()
-}
-
-get_corr_plot <- function(df, mode_noise, title, min_corr=0){
+get_auc_df <- function(df, .type){
+  .type <- enquo(.type)
   df %>%
-    filter(mode == mode_noise) %>%
-    ggplot(
-      aes(x=forcats::fct_reorder(statistic, corr, .fun = median, .desc =TRUE),
-          y=corr,
-          color=perc)
-    ) +
-    geom_boxplot(outlier.size=0) +
+    select(set_name, statistic, !!.type) %>%
+    mutate(!!.type := map(!!.type, function(df){
+      df %>%
+        group_by(run) %>%
+        summarize(raw_auc = unique(raw_auc)) %>%
+        pull(raw_auc)
+    })) %>%
+    unnest(cols = c(!!.type)) %>%
+    filter(!statistic %in% c('aucell','ora','norm_fgsea','fgsea','gsva'))
+}
+
+get_auc_boxplot <- function(df, .type, ylabel='AUROC'){
+  .type <- enquo(.type)
+
+  order <- df %>%
+    group_by(set_name, statistic) %>%
+    summarize(median=median(!!.type), .groups='drop') %>%
+    arrange(desc(median)) %>%
+    distinct(statistic) %>%
+    pull(statistic)
+  df$statistic <- factor(df$statistic, levels = rev(order))
+
+  ggplot(df, aes(x=statistic, y=!!.type, color=set_name)) +
+    geom_boxplot() +
     xlab('Methods') +
-    ylab('Correlation') +
-    ggtitle(title) +
-    ylim(min_corr,1) +
+    ylab(ylabel) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 }
 
+get_auc_scatter <- function(df){
+  min_lim <- floor(min(c(df$roc, df$prc)) * 100)/100
+  max_lim <- ceiling(max(c(df$roc, df$prc)) * 100)/100
+  ggplot(df, aes(x=roc, y=prc, label=statistic, color=set_name)) +
+    geom_point() +
+    geom_text_repel(max.overlaps = Inf, max.time=5, max.iter=1000000) +
+    theme(text = element_text(size=14)) +
+    xlab('AUROC') +
+    ylab('AUPRC') +
+    xlim(min_lim,max_lim) +
+    ylim(min_lim,max_lim) +
+    theme_bw()
+}
+
 # Read
-rna_result <- read_rds(file.path('data', 'prc', 'rna_noise.rds'))
-php_result <- read_rds(file.path('data', 'prc', 'php_noise.rds'))
+rna_result <- readRDS(file.path('data', 'prc', 'rna_result.rds'))
+php_result <- readRDS(file.path('data', 'prc', 'php_result.rds'))
 
 # Generate data-frames
-rna_corr_df <- get_corr_df(rna_result)
-php_corr_df <- get_corr_df(php_result)
+php_roc_df <- get_auc_df(php_result, roc)
+php_prc_df <- get_auc_df(php_result, prc)
+
+php_auc_df <- php_roc_df %>%
+  left_join(php_prc_df) %>%
+  group_by(set_name, statistic) %>%
+  summarise(roc = median(roc), prc = median(prc), .groups='drop')
 
 # Generate plots
-both_corr_df <- rbind(rna_corr_df, php_corr_df)
-min_corr <- both_corr_df %>% pull(corr) %>% min()
-min_corr <- min_corr - (min_corr * 0.05)
-rna_add_box <- get_corr_plot(rna_corr_df, mode='add', title='Addition', min_corr=min_corr)
-rna_del_box <- get_corr_plot(rna_corr_df, mode='del', title='Deletion', min_corr=min_corr)
-php_add_box <- get_corr_plot(php_corr_df, mode='add', title='Addition', min_corr=min_corr)
-php_del_box <- get_corr_plot(php_corr_df, mode='del', title='Deletion', min_corr=min_corr)
+php_roc_boxp <- get_auc_boxplot(php_roc_df, roc, 'AUROC')
+php_prc_boxp <- get_auc_boxplot(php_prc_df, prc, 'AUPRC') + theme(legend.position="none")
+php_auc_scatt <- get_auc_scatter(php_auc_df) + theme(legend.position="none")
 
-# Test sign
-pval <- wilcox.test(filter(both_corr_df, mode=='add')$corr,
-                    filter(both_corr_df, mode=='del')$corr, alternative = "g")$p.value
-print(paste0('add-del wilcoxon pvalue: ', pval))
-
-# Merge together and save
+# Save
 pdf(file = file.path(path_figs, 'supp_fig_4.pdf'),
-    width = 6, # The width of the plot in inches
-    height = 6) # The height of the plot in inches
-rna_add_box + rna_del_box + php_add_box + php_del_box +
-  plot_layout(guides = 'collect')  +
+    width = 10, # The width of the plot in inches
+    height = 5) # The height of the plot in inches
+((php_roc_boxp / php_prc_boxp) | php_auc_scatt) +
+  plot_layout(guides = 'collect', widths = c(1, 2))  +
   plot_annotation(tag_levels = 'A')
 dev.off()
+
+# Test significance better performance
+df <- php_roc_df %>%
+  left_join(php_prc_df) %>%
+  pivot_longer(cols=c(roc, prc)) %>%
+  select(-name) %>%
+  filter(statistic != 'norm_wsum')
+unweighted <- df %>%
+  filter(set_name == 'unweighted') %>%
+  pull(value)
+weighted <- df %>%
+  filter(set_name == 'weighted') %>%
+  pull(value)
+p_value <- wilcox.test(weighted, unweighted, alternative = "g")$p.value
+print(paste0('p-value weighted methods have greater AUC: ', p_value))
+
+
+
+
+
