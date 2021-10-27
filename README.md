@@ -46,5 +46,6 @@ Rscript R/plot/supp_fig_3.R
 Rscript R/plot/supp_fig_4.R
 Rscript R/plot/supp_fig_5.R
 Rscript R/plot/supp_fig_6.R
+Rscript R/plot/supp_fig_7.R
 ```
 
