@@ -55,3 +55,50 @@ rna_time_p + php_time_p +
   plot_annotation(tag_levels = 'A')
 dev.off()
 
+# Report median speed
+top_performers <- read.csv(file.path(path_figs, 'supp_tab_2.csv')) %>%
+  filter(p_value < 0.05) %>%
+  pull(statistic)
+
+get_sample_n <- function(df){
+  df[1,] %>%
+    select(activity) %>%
+    unnest(activity) %>%
+    pull(id) %>%
+    unique() %>%
+    length()
+}
+
+get_regult_n <- function(df){
+  df[1,] %>%
+    select(activity) %>%
+    unnest(activity) %>%
+    pull(source) %>%
+    unique() %>%
+    length()
+}
+
+rna_sample_n <- get_sample_n(rna_result)
+rna_regult_n <- get_regult_n(rna_result)
+php_sample_n <- get_sample_n(php_result)
+php_regult_n <- get_regult_n(php_result)
+
+
+rna_speed_df <- rna_time_df %>%
+  filter(statistic %in% top_performers) %>%
+  mutate(Speed = Time / rna_sample_n / rna_regult_n) %>%
+  select(statistic, Speed)
+
+php_speed_df <- php_time_df %>%
+  filter(statistic %in% top_performers) %>%
+  mutate(Speed = Time / php_sample_n / php_regult_n) %>%
+  select(statistic, Speed)
+
+median_speed <- rna_speed_df %>%
+  bind_rows(php_speed_df) %>%
+  summarise(median=median(Speed)) %>%
+  pull(median)
+
+print(paste0('Median speed of top performers: ',
+             formatC(median_speed, format = "e", digits = 2)))
+
