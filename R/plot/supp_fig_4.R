@@ -83,7 +83,7 @@ pdf(file = file.path(path_figs, 'supp_fig_4.pdf'),
     width = 10, # The width of the plot in inches
     height = 5) # The height of the plot in inches
 ((php_roc_boxp / php_prc_boxp) | php_auc_scatt) +
-  plot_layout(guides = 'collect', widths = c(1, 2))  +
+  plot_layout(guides = 'collect', widths = c(1, 1))  +
   plot_annotation(tag_levels = 'A')
 dev.off()
 
