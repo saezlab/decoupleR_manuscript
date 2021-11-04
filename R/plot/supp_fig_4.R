@@ -99,10 +99,11 @@ unweighted <- df %>%
 weighted <- df %>%
   filter(set_name == 'weighted') %>%
   pull(value)
-p_value <- wilcox.test(weighted, unweighted, alternative = "g")$p.value
-print(paste0('p-value weighted methods have greater AUC: ', p_value))
+test <- wilcox.test(weighted, unweighted, alternative = "g", paired=T)
+p_value <- formatC(test$p.value, format = "e", digits = 2)
+W <- formatC(unname(test$statistic), format = "e", digits = 2)
+N <- formatC(length(weighted), format = "e", digits = 2)
 
-
-
-
+print(paste0('weighted methods have greater AUC: p_value=', p_value, '; W=', W,
+             '; N=', N))
 

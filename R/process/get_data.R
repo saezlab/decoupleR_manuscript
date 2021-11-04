@@ -45,7 +45,7 @@ get_dorothea <- function(path){
 
 get_KSN <- function(path){
   # Download regulons
-  url <- 'https://docs.google.com/uc?export=download&id=1vkSIuIneXb30VrMuFzGd2yWofQl962cT'
+  url <- 'https://zenodo.org/record/5645208/files/kinase_regulons.txt?download=1'
   fname <- file.path(path, 'kinase_regulons.csv')
   download.file(url, fname)
   Sys.sleep(1)
@@ -67,8 +67,8 @@ get_KSN <- function(path){
 
 get_rna_data <- function(path){
   # Download
-  expr_url <- 'https://docs.google.com/uc?export=download&id=1szbAAbiHtk7owKzzOhPjWg4zhXUvYwZV'
-  meta_url <- 'https://docs.google.com/uc?export=download&id=1nkvdtR0M1CvQPvFfz5OzJ75eicgE-0wu'
+  expr_url <- 'https://zenodo.org/record/5645208/files/rna_expr.rds?download=1'
+  meta_url <- 'https://zenodo.org/record/5645208/files/rna_meta.rds?download=1'
   download.file(expr_url, file.path(path, 'rna_expr.rds'))
   Sys.sleep(1)
   download.file(meta_url, file.path(path, 'rna_meta.rds'))
@@ -89,8 +89,8 @@ get_rna_data <- function(path){
 
 get_php_data <- function(path){
   # Download
-  expr_url <- 'https://docs.google.com/uc?export=download&id=1XtnPk5VhrJ5_Vn9J0Roo5rbkTNYLsw4G'
-  meta_url <- 'https://docs.google.com/uc?export=download&id=1N8nsCUuxRZEUC6sIssyyROBk7FwAZfc_'
+  expr_url <- 'https://zenodo.org/record/5645208/files/annotations.xlsx?download=1'
+  meta_url <- 'https://zenodo.org/record/5645208/files/benchmark_data.xlsx?download=1'
   expr_fname <- file.path(path, 'php_expr.xlsx')
   meta_fname <- file.path(path, 'php_meta.xlsx')
   download.file(expr_url, expr_fname)

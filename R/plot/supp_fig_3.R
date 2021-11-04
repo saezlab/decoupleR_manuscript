@@ -122,12 +122,15 @@ methods_df <- all_auc_df %>%
     meth <- unique(df$statistic)
     other_meth <- all_auc_df %>%
       filter(statistic != meth)
-    p_value <- wilcox.test(df$value, other_meth$value, alternative = "g")$p.value
-    tibble(statistic = meth, p_value = p_value)
+    test <- wilcox.test(df$value, other_meth$value, alternative = "g")
+    p_value <- formatC(test$p.value, format = "e", digits = 2)
+    W <- formatC(unname(test$statistic), format = "e", digits = 2)
+    N <- formatC(length(df$value) + length(other_meth$value), format = "e", digits = 2)
+    tibble(statistic = meth, p_value = p_value, W=W, N=N)
   }) %>%
   bind_rows() %>%
   left_join(median_auc) %>%
-  mutate(median_auc = round(median_auc, digits = 4)) %>%
+  mutate(median_auc = round(median_auc, digits = 2)) %>%
   mutate(p_value = p.adjust(p_value, method='fdr')) %>%
   arrange(p_value, -median_auc)
 
@@ -136,5 +139,3 @@ print(paste0('Best performing methods: ',
                     collapse=', ')))
 
 write.csv(methods_df, file.path(path_figs, 'supp_tab_2.csv'), row.names=F)
-
-

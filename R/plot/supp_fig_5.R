@@ -22,56 +22,53 @@ read_rds <- function(path){
 
 get_corr_df <- function(df){
   # Split df by normal, add and del
+  statistics <- unique(df$statistic)
   lst_dfs <- df %>%
     select(mode, perm, perc, activity) %>%
     unnest(activity) %>%
     select(mode, perm, perc, statistic, source, id, score) %>%
+    mutate(pair = paste0(source, '.', id)) %>%
     group_by(mode) %>%
     group_split()
-  add_df <- lst_dfs[[1]]
-  del_df <- lst_dfs[[2]]
-  normal_df <- lst_dfs[[3]] %>%
-    arrange(source, id, statistic) %>%
-    pivot_wider(names_from=statistic, values_from=score) %>%
-    unite(pair, source, id, sep='.')
-  # Compute corrs
+  unq_pairs <- lst_dfs[[2]] %>%
+    group_by(perm, perc) %>%
+    group_split() %>%
+    map(function(df){
+      df %>%
+        pull(pair)
+    }) %>%
+    Reduce(intersect, .)
+  add_df <- lst_dfs[[1]] %>%
+    filter(pair %in% unq_pairs)
+  del_df <- lst_dfs[[2]] %>%
+    filter(pair %in% unq_pairs)
+  nrm_df <- lst_dfs[[3]] %>%
+    filter(pair %in% unq_pairs) %>%
+    pivot_wider(names_from=statistic, values_from=score)
+
   map(list(add_df, del_df), function(noise_df){
     noise_df %>%
-      group_by(perc) %>%
+      group_by(perc, perm) %>%
       group_split() %>%
-      map(function(df2){
-        df2 %>%
-          group_by(perm) %>%
-          group_split() %>%
-          map(function(df3){
-            perc_n <- unique(df3$perc)
-            mode_n <- unique(df3$mode)
-            perm_n <- unique(df3$perm)
-            tmp <- df3 %>%
-              arrange(source, id, statistic) %>%
-              pivot_wider(names_from=statistic, values_from=score) %>%
-              unite(pair, source, id, sep='.') %>%
-              filter(pair %in% intersect(.$pair, normal_df$pair)) %>%
-              select(-mode, -perm, -perc)
-            normal_df_tmp <- normal_df %>%
-              filter(pair %in% intersect(.$pair, tmp$pair))
-            tmp <- tmp %>%
-              select(-pair)
-            map(colnames(tmp), function(name){
-              tibble(
-                mode = mode_n,
-                perc = perc_n,
-                perm = perm_n,
-                statistic = name,
-                corr = cor(normal_df_tmp[[name]], tmp[[name]], method='spearman')
-              )
-            }) %>%
-              bind_rows()
-          }) %>%
+      map(function(df){
+        perc_n <- unique(df$perc)
+        mode_n <- unique(df$mode)
+        perm_n <- unique(df$perm)
+        df <- df %>%
+          pivot_wider(names_from=statistic, values_from=score)
+        map(statistics, function(statistic){
+          tibble(
+            mode = mode_n,
+            perc = perc_n,
+            perm = perm_n,
+            statistic = statistic,
+            corr = cor(df[[statistic]], nrm_df[[statistic]], method='spearman')
+          )
+        }) %>%
           bind_rows()
       }) %>%
       bind_rows()
-  }) %>%
+    }) %>%
     bind_rows()
 }
 
@@ -110,9 +107,18 @@ php_add_box <- get_corr_plot(php_corr_df, mode='add', title='Addition', min_corr
 php_del_box <- get_corr_plot(php_corr_df, mode='del', title='Deletion', min_corr=min_corr)
 
 # Test sign
-pval <- wilcox.test(filter(both_corr_df, mode=='add')$corr,
-                    filter(both_corr_df, mode=='del')$corr, alternative = "g")$p.value
-print(paste0('add-del wilcoxon pvalue: ', pval))
+median_corr <- rna_corr_df %>%
+  bind_rows(php_corr_df) %>%
+  group_by(mode) %>%
+  summarize(median_corr=median(corr))
+print(median_corr)
+add <- filter(both_corr_df, mode=='add')$corr
+del <- filter(both_corr_df, mode=='del')$corr
+test <- wilcox.test(add, del, alternative = "g", paired=T)
+p_value <- formatC(test$p.value, format = "e", digits = 2)
+W <- formatC(unname(test$statistic), format = "e", digits = 2)
+N <- formatC(length(add), format = "e", digits = 2)
+print(paste0('add-del: p_value=', p_value, '; W=', W,'; N=', N))
 
 # Merge together and save
 pdf(file = file.path(path_figs, 'supp_fig_5.pdf'),
