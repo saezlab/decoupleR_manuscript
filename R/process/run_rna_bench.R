@@ -1,6 +1,5 @@
 library(decoupleRBench)
-library(dplyr)
-library(tibble)
+library(tidyverse)
 source(file.path('R', 'process', 'methods_params.R'))
 
 # Define data, metadata and network path
@@ -22,8 +21,9 @@ design <- tibble(
   source_loc = netw_fname, # set source location
   source_col = "tf", # source name of the gene set source
   target_col = "target", # target name of the set source
-  filter_col = "confidence", # column by which we wish to filter
-  filter_crit = list(c('A','B','C')) # criteria by which we wish to filter
+  filter_col = "confidence",
+  filter_crit = list(c('A','B','C')),
+  consensus_crit = list(c('mlm','ulm','wsum_norm'))
 )
 
 # Run benchmark

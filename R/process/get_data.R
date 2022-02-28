@@ -32,9 +32,6 @@ get_dorothea <- function(path){
   # Remove duplicates
   dorothea_hs <- dplyr::distinct(dorothea_hs, tf, target, confidence, .keep_all = TRUE)
 
-  # Add likelihood
-  dorothea_hs['likelihood'] <- 1
-
   # Filter by confidence
   dorothea_hs <- dplyr::filter(dorothea_hs, confidence %in% c("A","B","C"))
 
@@ -53,10 +50,9 @@ get_KSN <- function(path){
   # Format
   KSN <- read.delim(fname)
   KSN <- tibble::tibble(source = KSN$Regulator,
-                        likelihood = KSN$SS,
                         target = KSN$Target,
-                        mor = 1,
-                        confidence = "A")
+                        mor = KSN$SS,
+                        confidence = 'A')
 
   # Save
   saveRDS(KSN, file.path(path, 'KSN.rds'))

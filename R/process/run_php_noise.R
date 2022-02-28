@@ -25,16 +25,16 @@ design <- tibble(
   target_col = "target", # target name of the set source
   filter_col = "confidence", # column by which we wish to filter
   filter_crit = list(c('A')), # criteria by which we wish to filter,
-  noise_crit = list(NA)
+  noise_crit = list(NA),
+  consensus_crit = list(c('mlm','ulm','wsum_norm'))
 )
 
 design <- bind_rows(
   design,
   map_df(c('add', 'del'), function(mode){
     map_df(c(0.25, 0.5, 0.75), function(perc){
-      map_df(1:5, function(i){
-        design %>%
-          mutate(set_name=paste0(mode,as.character(i)), bench_name=as.character(perc),
+      map_df(1:3, function(i){
+          mutate(design, set_name=paste0(mode,as.character(i)), bench_name=as.character(perc),
                  noise_crit = list(list(mode=mode, perc=perc, seed=i)))
       })
     })

@@ -24,13 +24,13 @@ design <- tibble(
   target_col = "target", # target name of the set source
   filter_col = "confidence", # column by which we wish to filter
   filter_crit = list(c('A')), # criteria by which we wish to filter,
-  weight_crit = list(list(.likelihood = "likelihood"))
+  weight_crit = list(list(.mor = "mor")),
+  consensus_crit = list(c('mlm','ulm','wsum_norm'))
 )
 
 design <- bind_rows(
   design,
-  design %>%
-    mutate(set_name ="weighted", weight_crit = list(NA))
+  mutate(design, set_name ="weighted", weight_crit = list(NA))
   )
 
 # Run benchmark

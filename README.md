@@ -32,9 +32,14 @@ To reproduce all the analyses performed in the manuscript, please run:
 # Run perturbation benchmark
 Rscript R/process/run_rna_bench.R
 Rscript R/process/run_php_bench.R
+
 # Run noise analysis (This might take a while)
 Rscript R/process/run_rna_noise.R #(~6 hours)
 Rscript R/process/run_php_noise.R #(~2 hours)
+
+# Run scalablity analysis (This might take a while)
+Rscript R/process/get_simmulated_data.R
+bash run_scale_bench.R
 ```
 
 ## Figures

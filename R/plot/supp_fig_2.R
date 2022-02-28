@@ -26,7 +26,7 @@ get_corr_mat <- function(df, filt = 'dorothea'){
   rownames(corr_matrix) <- colnames(df)
   for (name_a in colnames(df)) {
     for (name_b in colnames(df)) {
-      corr_matrix[name_a,name_b] <- cor(x=abs(df[[name_a]]), y=abs(df[[name_b]]), method = 'spearman')
+      corr_matrix[name_a,name_b] <- cor(x=abs(df[[name_a]]), y=abs(df[[name_b]]), method = 'spearman', use='pairwise.complete.obs')
     }
   }
   corr_matrix
@@ -85,10 +85,10 @@ get_mat_plot <- function(mat, main = 'Spearman correlation', palette = 'Greens')
   # Plot
   celldim <- 10
   mat_heat <- pheatmap(mat, color = colorRampPalette((RColorBrewer::brewer.pal(n = 7, name =palette)))(100),
-                       display_numbers=F, cluster_rows = F, number_color='black', border_color=NA,
-                       cluster_cols = T, na_col=NA, cellwidth = celldim, cellheight = celldim,
+                       display_numbers=F, cluster_rows = T, number_color='black', border_color=NA,
+                       cluster_cols = F, na_col=NA, cellwidth = celldim, cellheight = celldim,
                        legend_breaks = c(0, 0.25, 0.50, 0.75, 1.0), legend=T,
-                       show_rownames = T, show_colnames = T, main=main,
+                       show_rownames = T, show_colnames = F, main=main,
                        width = 4, height=4, silent=T)
   return(as.ggplot(mat_heat))
 }
@@ -115,8 +115,8 @@ php_jacc_plot <- get_mat_plot(php_jacc_mat, main='Jaccard index', palette='Reds'
 
 # Merge together and save
 pdf(file = file.path(path_figs, 'supp_fig_2.pdf'),
-    width = 8, # The width of the plot in inches
-    height = 9) # The height of the plot in inches
+    width = 12, # The width of the plot in inches
+    height = 6) # The height of the plot in inches
 rna_corr_plot + rna_jac_plot + php_corr_plot + php_jacc_plot +
   plot_annotation(tag_levels = 'A')
 dev.off()

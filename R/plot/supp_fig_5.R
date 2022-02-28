@@ -62,7 +62,7 @@ get_corr_df <- function(df){
             perc = perc_n,
             perm = perm_n,
             statistic = statistic,
-            corr = cor(df[[statistic]], nrm_df[[statistic]], method='spearman')
+            corr = cor(df[[statistic]], nrm_df[[statistic]], method='spearman', use='pairwise.complete.obs')
           )
         }) %>%
           bind_rows()
@@ -99,7 +99,7 @@ php_corr_df <- get_corr_df(php_result)
 
 # Generate plots
 both_corr_df <- rbind(rna_corr_df, php_corr_df)
-min_corr <- both_corr_df %>% pull(corr) %>% min()
+min_corr <- both_corr_df %>% pull(corr) %>% min(na.rm = T)
 min_corr <- min_corr - (min_corr * 0.05)
 rna_add_box <- get_corr_plot(rna_corr_df, mode='add', title='Addition', min_corr=min_corr)
 rna_del_box <- get_corr_plot(rna_corr_df, mode='del', title='Deletion', min_corr=min_corr)
@@ -110,7 +110,7 @@ php_del_box <- get_corr_plot(php_corr_df, mode='del', title='Deletion', min_corr
 median_corr <- rna_corr_df %>%
   bind_rows(php_corr_df) %>%
   group_by(mode) %>%
-  summarize(median_corr=median(corr))
+  summarize(median_corr=median(corr, na.rm = T))
 print(median_corr)
 add <- filter(both_corr_df, mode=='add')$corr
 del <- filter(both_corr_df, mode=='del')$corr
